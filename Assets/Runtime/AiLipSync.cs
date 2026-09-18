@@ -11,7 +11,7 @@ public class AiLipSync : MonoBehaviour
     [Header("Audio Input")]
     public uLipSyncAudioSource audioSourceProxy;
     [Min(1)] public int modelInputSampleRate = 16000;
-    [Min(1)] public int modelInputSampleCount = 1600;
+    [Min(1)] public int modelInputSampleCount = 1024;
     [Range(0.01f, 0.2f)] public float inferenceInterval = 0.02f;
     [Range(0f, 0.1f)] public float silenceVolumeThreshold = 0.005f;
 
@@ -149,8 +149,8 @@ public class AiLipSync : MonoBehaviour
             // MODEL INPUT LOCATION: `_modelInput` (also exposed by `latestModelInput`).
             // MODEL INPUT FORMAT: float32 PCM, mono, chronological order (oldest -> newest),
             // normalized to Unity audio's usual [-1, 1] range. Its fixed tensor shape is
-            // [1, modelInputSampleCount], currently [1, 1600], at modelInputSampleRate Hz
-            // (currently 16 kHz, representing the latest 100 ms of audio).
+            // [1, modelInputSampleCount], currently [1, 1024], at modelInputSampleRate Hz
+            // (currently 16 kHz, representing the latest 64 ms of audio).
             for (int targetIndex = 0; targetIndex < inputLength; ++targetIndex)
             {
                 float sourcePosition = inputLength == 1 ? 0f :
@@ -168,7 +168,7 @@ public class AiLipSync : MonoBehaviour
         }
     }
 
-    float[] RunModel(float[] modelInput)
+    protected virtual float[] RunModel(float[] modelInput)
     {
         // MODEL INFERENCE REPLACEMENT POINT:
         // Replace this method with Sentis, ONNX Runtime, or a native inference call after the

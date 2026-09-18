@@ -21,6 +21,8 @@ public class uLipSync : MonoBehaviour
     object _lockObject = new object();
     bool _allocated = false;
     int _index = 0;
+    int _lastScheduledStartIndex = 0;
+    bool _hasScheduledInput = false;
     bool _isDataReceived = false;
 
     NativeArray<float> _rawInputData;
@@ -37,6 +39,28 @@ public class uLipSync : MonoBehaviour
 
     public NativeArray<float> mfcc => _mfccForOther;
     public LipSyncInfo result { get; private set; } = new LipSyncInfo();
+
+    public bool TryCopyLastAnalyzedAudio(out float[] samples, out int sampleRate)
+    {
+        samples = null;
+        sampleRate = AudioSettings.outputSampleRate;
+
+        if (!_allocated || !_hasScheduledInput || !_inputData.IsCreated) return false;
+
+        lock (_lockObject)
+        {
+            samples = new float[_inputData.Length];
+
+            // The raw input buffer is circular. Rebuild it in the same chronological order used
+            // by LipSyncJob.CopyRingBuffer so data recorders receive the exact analysis window.
+            for (int i = 0; i < samples.Length; ++i)
+            {
+                samples[i] = _inputData[(_lastScheduledStartIndex + i) % _inputData.Length];
+            }
+        }
+
+        return true;
+    }
     
 #if UNITY_WEBGL
     public bool autoAudioSyncOnWebGL = true;
@@ -294,6 +318,9 @@ public class uLipSync : MonoBehaviour
             _standardDeviations.CopyFrom(profile.standardDeviation);
             index = _index;
         }
+
+        _lastScheduledStartIndex = index;
+        _hasScheduledInput = true;
 
         var lipSyncJob = new LipSyncJob()
         {

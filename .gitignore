@@ -49,6 +49,8 @@ ExportedObj/
 *.mdb
 *.opendb
 *.VC.db
+__pycache__/
+*.py[cod]
 
 # Unity3D generated meta files
 *.pidb.meta
